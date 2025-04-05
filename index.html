@@ -58,15 +58,8 @@
     <script>
         // 📌 Start AR on Button Click
         document.getElementById('startAR').addEventListener('click', async function() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                if (stream) {
-                    document.getElementById('startAR').style.display = 'none';
-                    document.getElementById('arContainer').style.display = 'block';
-                }
-            } catch (err) {
-                alert("Camera permission denied. Please allow access to use AR.");
-            }
+            document.getElementById('startAR').style.display = 'none';
+            document.getElementById('arContainer').style.display = 'block';
         });
 
         //tap-to-speak
