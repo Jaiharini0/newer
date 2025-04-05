@@ -1,1 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <title>WebAR Solar System</title>
+
+    <!-- Load A-Frame & AR.js -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/ar.js/aframe/build/aframe-ar.min.js"></script>
+    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh;">
+
+    <button id="startAR" style="padding: 15px 30px; font-size: 16px; cursor: pointer;">
+        Start AR Experience
+    </button>
+
+    <div id="arContainer" style="display: none; width: 100%; height: 100%;">
+        <a-scene embedded arjs="sourceType: webcam;">
+            <a-assets>
+                <a-asset-item id="solarModel" src="post.glb"></a-asset-item>
+            </a-assets>
+
+
+            <!-- 🌍 Solar System Model with Animations & Controls -->
+            <a-entity 
+                id="solarSystem"
+                gltf-model="#solarModel"
+                animation-mixer
+                position="0 2 -30"
+                scale="0.5 0.5 0.5"
+                gesture-controls>
+            </a-entity>
+
+            <a-assets>
+                <img id="sunTexture" src="sun2.jpg">
+            </a-assets>
+            
+            <!-- 🌞 Sun with Glowing Texture -->
+            <a-entity id="sun"
+                      geometry="primitive: sphere; radius: 1.2"
+                      material="src: #sunTexture; transparent: false; shader: standard; emissiveIntensity: 1"
+                      position="0 2 -30">
+            </a-entity>
+
+
+            <!-- 🎥 Camera Setup with Zoom & Rotate -->
+            <a-camera position="1 5 5" 
+                rotation="-30 -45 0"
+                look-controls>
+                <a-cursor></a-cursor>
+            </a-camera>
+        </a-scene>
+    </div>
+
+    <script>
+        // 📌 Start AR on Button Click
+        document.getElementById('startAR').addEventListener('click', async function() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (stream) {
+                    document.getElementById('startAR').style.display = 'none';
+                    document.getElementById('arContainer').style.display = 'block';
+                }
+            } catch (err) {
+                alert("Camera permission denied. Please allow access to use AR.");
+            }
+        });
+
+        //tap-to-speak
+        AFRAME.registerComponent("planet-speech", {
+            init: function () {
+                let el = this.el;
+                el.addEventListener("model-loaded", function () {
+                    let model = el.getObject3D("mesh");
+                    if (!model) return;
+        
+                    el.addEventListener("click", function (event) {
+                        let clickedPlanet = event.detail.intersection.object; // Get clicked object
+                        let planetName = getPlanetName(clickedPlanet);
+                        
+                        if (planetName) {
+                            speak(planetDescriptions[planetName] || "I am a mysterious celestial body.");
+                            // 🌀 Animate the clicked mesh's parent
+                            const planetGroup = clicked.parent;
+                            const originalScale = planetGroup.scale.clone();
+                
+                            // Create temporary A-Frame entity to animate scale
+                            const tempEntity = document.createElement("a-entity");
+                            tempEntity.setAttribute("scale", originalScale);
+                            planetGroup.add(tempEntity.object3D);
+                
+                            // Animate zoom-in
+                            tempEntity.setAttribute("animation__zoom", {
+                                property: "scale",
+                                to: `${originalScale.x * 1.3} ${originalScale.y * 1.3} ${originalScale.z * 1.3}`,
+                                dur: 200,
+                                easing: "easeOutQuad",
+                                autoplay: true
+                              });
+                
+                            // Animate zoom-out after 300ms
+                            setTimeout(() => {
+                                tempEntity.setAttribute("animation__zoomOut", {
+                                  property: "scale",
+                                  to: `${originalScale.x} ${originalScale.y} ${originalScale.z}`,
+                                  dur: 200,
+                                  easing: "easeInQuad",
+                                  autoplay: true
+                                });
+                            }, 300);
+                    });
+                });
+            }
+        });
+        
+        // 🎙️ Function to make planets speak
+        function speak(text) {
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "en-US"; // Set language
+            utterance.rate = 1; // Adjust speed
+            speechSynthesis.speak(utterance);
+        }
+        
+        // 🌍 Define planet descriptions
+        const planetDescriptions = {
+            Sun: "I am the Sun, the heart of the Solar System. I provide light and warmth to all the planets!. My gravity keeps the planets in orbit!.I have been shining for over 4.6 billion years! My surface temperature is around 5,500°C",
+            Mercury: "I am Mercury, the closest planet to the Sun. I am small but incredibly fast!",
+            Venus: "I am Venus, the hottest planet in the solar system, covered with thick clouds!.",
+            Earth: "Hello! I am Earth, your home planet. The only planet known to support life.",
+            Mars: "I am Mars, also called the Red Planet. Scientists are searching for signs of life here.",
+            Jupiter: "I am Jupiter, the biggest planet in the solar system. My Great Red Spot is a giant storm!",
+            Saturn: "I am Saturn, famous for my beautiful rings made of ice and rock!.",
+            Uranus: "I am Uranus, I rotate on my side!, and I am a frozen gas giant!",
+            Neptune: "I am Neptune, the farthest planet from the Sun. My winds are the fastest in the Solar System!"
+        };
+        
+        // 🔎 Function to get the planet name from the clicked object
+        function getPlanetName(object) {
+            while (object) {
+                if (planetDescriptions[object.name]) {
+                    return object.name; // Return matching planet name
+                }
+                object = object.parent; // Move up hierarchy if needed
+            }
+            return null;
+        }
+        
+        
+        // 🔥 Attach the component to the solar system model
+        document.querySelector("#solarSystem").setAttribute("planet-speech", "");
+
+
+    </script>
+
+</body>
+</html>
 
